@@ -1,8 +1,10 @@
 import pandas as pd
+import os
 
-RESULTS_FULL_CSV = "data/results_full.csv"
-RESULTS_10Y_CSV = "data/results_last_10yrs.csv"
-RESULTS_5Y_CSV = "data/results_last_5yrs.csv"
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+RESULTS_FULL_CSV = "data/processed/results_full.csv"
+RESULTS_10Y_CSV = "data/processed/results_last_10yrs.csv"
+RESULTS_5Y_CSV = "data/processed/results_last_5yrs.csv"
 
 ACTIVE_CSV = RESULTS_5Y_CSV
 PRINT_ALL = False
@@ -58,7 +60,7 @@ def generate_stats(df: pd.DataFrame) -> pd.DataFrame:
 
 def main():
     try:
-        df_clean = pd.read_csv(ACTIVE_CSV)
+        df_clean = pd.read_csv(os.path.join(BASE_DIR, ACTIVE_CSV))
         
         stats_df = generate_stats(df_clean)
 
