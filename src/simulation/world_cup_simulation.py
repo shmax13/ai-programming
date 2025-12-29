@@ -182,9 +182,9 @@ def simulate_knockouts(group_tables):
     final = run_round(sf)
 
     # Winner
-    champion = final[0]
+    champion = run_round(final)
 
-    return r32, r16, qf, sf, final, champion
+    return r32, r16, qf, sf, final, champion[0]
 
 # helper function to print group stage results nicely
 def print_group_results(group_tables):
