@@ -1,4 +1,6 @@
 import numpy as np
+import random
+from collections import defaultdict
 
 # dummy skill function. replace this in notebooks with actual skill functions.
 def dummy_skill_function(team):
@@ -6,7 +8,6 @@ def dummy_skill_function(team):
 
 # globals. dirty but works as long as only simulate_world_cup is called sequentially
 skill_func = dummy_skill_function # dummy just gives a random skill to each team
-
 
 
 # groups. unconfirmed playoff spots are educated guesses.
@@ -30,17 +31,19 @@ def simulate_match(team1, team2, max_draw_prob=0.15):
     s1 = skill_func(team1)
     s2 = skill_func(team2)
     skill_diff = s1 - s2
-    
-    # draw probability higher when skills are close
+
+    # draw probability decreases with skill gap
     draw_prob = max_draw_prob * np.exp(-abs(skill_diff))
-    
-    # win probability for home team
-    p_home_win = 1 / (1 + np.exp(-skill_diff))
-    
+
+    # remaining probability for wins
+    win_prob = 1 - draw_prob
+    p_team1_win = win_prob / (1 + np.exp(-skill_diff))
+    p_team2_win = win_prob - p_team1_win
+
     r = np.random.rand()
-    if r < p_home_win:
+    if r < p_team1_win:
         return team1
-    elif r < p_home_win + draw_prob:
+    elif r < p_team1_win + draw_prob:
         return "draw"
     else:
         return team2
@@ -70,9 +73,14 @@ def simulate_group(team_list):
                     points[t1] += 1
                     points[t2] += 1
 
-    # convert to sorted table
-    table = sorted([{"team": team, "points": pts} for team, pts in points.items()],
-                   key=lambda x: x["points"], reverse=True)
+    # convert dict to list of dicts
+    table = [{"team": team, "points": pts} for team, pts in points.items()]
+
+    # shuffle to randomize order of ties
+    random.shuffle(table)
+
+    # sort by points descending
+    table = sorted(table, key=lambda x: x["points"], reverse=True)
 
     return table
 
@@ -85,30 +93,62 @@ def simulate_group_stage():
 
     return group_tables
 
+# collects the 8 best 3rd-placed teams from the group stage to advance.
+# note: this does not follow the official schedule, as that would be 495 distinct variations depending on groups.
+# we just pick the 8 best teams and assing randomly
+def pick_best_thirds(group_tables):
+    # collect all 3rd-placed teams with points
+    third_placed = [(table[2]['team'], table[2]['points']) for table in group_tables.values()]
+    
+    # group by points
+    points_groups = defaultdict(list)
+    for team, pts in third_placed:
+        points_groups[pts].append(team)
+    
+    # sort points descending
+    sorted_points = sorted(points_groups.keys(), reverse=True)
+    
+    top8 = []
+    for pts in sorted_points:
+        teams = points_groups[pts]
+        np.random.shuffle(teams)  # randomize tie-breakers
+        for t in teams:
+            if len(top8) < 8:
+                top8.append(t)
+            else:
+                break
+        if len(top8) >= 8:
+            break
+    
+    return top8
+
 # from the group stage results, create a list of matchups for the round of 32.
 # this follows the official placements (https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_knockout_stage)
 def create_knockouts_list(group_tables):
-    # TODO: do 3rd placed teams properly
+    # first, get the 8 best teams in 3rd place and shuffle them
+    best_thirds = pick_best_thirds(group_tables)
+    np.random.shuffle(best_thirds)  # shuffle so r32 ties aren’t biased
+
     r32 = [
-        group_tables["E"][0]['team'],  group_tables["A"][2]['team'],  # Match 1: 1E vs 3A/B/C/D/F
-        group_tables["I"][0]['team'],  group_tables["C"][2]['team'],  # Match 2: 1I vs 3C/D/F/G/H
+        group_tables["E"][0]['team'],  best_thirds[0],                # Match 1: 1E vs 3.1
+        group_tables["I"][0]['team'],  best_thirds[1],                # Match 2: 1I vs 3.2
         group_tables["A"][1]['team'],  group_tables["B"][1]['team'],  # Match 3: 2A vs 2B
         group_tables["F"][0]['team'],  group_tables["C"][1]['team'],  # Match 4: 1F vs 2C
 
         group_tables["K"][1]['team'],  group_tables["L"][1]['team'],  # Match 5: 2K vs 2L    
         group_tables["H"][0]['team'],  group_tables["J"][1]['team'],  # Match 6: 1H vs 2J 
-        group_tables["D"][0]['team'],  group_tables["B"][2]['team'],  # Match 7: 1D vs 3B/E/F/I/J   
-        group_tables["G"][0]['team'],  group_tables["F"][2]['team'],  # Match 8: 1G vs 3A/E/H/I/J  
+        group_tables["D"][0]['team'],  best_thirds[2],                # Match 7: 1D vs 3.3
+        group_tables["G"][0]['team'],  best_thirds[3],                # Match 8: 1G vs 3.4
 
         group_tables["C"][0]['team'],  group_tables["F"][1]['team'],  # Match 9: 1C vs 2F    
         group_tables["E"][1]['team'],  group_tables["I"][1]['team'],  # Match 10: 2E vs 2I    
-        group_tables["A"][0]['team'],  group_tables["I"][2]['team'],  # Match 11: 1A vs 3C/E/F/H/I    
-        group_tables["L"][0]['team'],  group_tables["K"][2]['team'],  # Match 12: 1L vs 3E/H/I/J/K 
+        group_tables["A"][0]['team'],  best_thirds[4],                # Match 11: 1A vs 3.5
+        group_tables["L"][0]['team'],  best_thirds[5],                # Match 12: 1L vs 3.6
 
         group_tables["J"][0]['team'],  group_tables["H"][1]['team'],  # Match 13: 1J vs 2H   
         group_tables["D"][1]['team'],  group_tables["G"][1]['team'],  # Match 14: 2D vs 2G   
-        group_tables["B"][0]['team'],  group_tables["G"][2]['team'],  # Match 15: 1B vs 3E/F/G/I/J    
-        group_tables["K"][0]['team'],  group_tables["D"][2]['team'],  # Match 16: 1K vs 3D/E/I/J/L
+        group_tables["B"][0]['team'],  best_thirds[6],                # Match 15: 1B vs 3.7  
+        group_tables["K"][0]['team'],  best_thirds[7],                # Match 16: 1K vs 3.8
     ]
 
     return r32
