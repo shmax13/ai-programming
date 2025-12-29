@@ -65,10 +65,10 @@ def main():
         stats_df = generate_stats(df_clean)
 
         if (PRINT_ALL):
-            print("## ⚽ All Teams by Games Played (All-Time) ##")
+            print("## All Teams by Games Played (All-Time) ##")
             print(stats_df.to_string(index=True))
         else:
-            print("## ⚽ Top 10 Teams by Games Played (All-Time) ##")
+            print("## Top 10 Teams by Games Played (All-Time) ##")
             print(stats_df.head(10).to_string(index=True))
 
         print("\n---")
