@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 RESULTS_FULL_CSV = "data/processed/results_full.csv"
 RESULTS_10Y_CSV = "data/processed/results_last_10yrs.csv"
 RESULTS_5Y_CSV = "data/processed/results_last_5yrs.csv"
