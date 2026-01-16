@@ -7,7 +7,7 @@ RESULTS_FULL_CSV = "data/processed/results_full.csv"
 RESULTS_10Y_CSV = "data/processed/results_last_10yrs.csv"
 RESULTS_5Y_CSV = "data/processed/results_last_5yrs.csv"
 
-ACTIVE_CSV = RESULTS_5Y_CSV
+ACTIVE_CSV = RESULTS_10Y_CSV
 
 MIN_MATCHES = 20
 SHRINK_K = 25
